@@ -1,0 +1,192 @@
+// Physio Connect data model.
+//
+// Enums are modeled as validated `String` fields (not Prisma `enum`) because
+// the SQLite connector used for local dev does not support native enums.
+// Valid values are enforced with zod in src/utils/enums.ts. Switching the
+// datasource to Postgres later does not require changing this.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         String // PHYSIO | CLUB
+  createdAt    DateTime @default(now())
+
+  physioProfile PhysioProfile?
+  clubProfile   ClubProfile?
+
+  ratingsGiven    Rating[] @relation("RatingsGiven")
+  ratingsReceived Rating[] @relation("RatingsReceived")
+}
+
+model PhysioProfile {
+  id       String @id @default(cuid())
+  userId   String @unique
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName String
+  phone    String?
+  bio      String?
+
+  locationText      String
+  latitude          Float?
+  longitude         Float?
+  travelRadiusMiles Int    @default(20)
+
+  // HCPC or CSP registration — required for every physio profile.
+  registrationBody     String // HCPC | CSP
+  registrationNumber   String
+  registrationVerified Boolean @default(false)
+
+  yearsExperience Int     @default(0)
+  dayRate         Float?
+  sports          String // comma-separated list, e.g. "football,rugby"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  certifications Certification[]
+  applications   Application[]
+  bookings       Booking[]
+
+  @@index([latitude, longitude])
+}
+
+model ClubProfile {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clubName    String
+  sport       String
+  contactName String
+  contactRole String?
+  phone       String?
+
+  locationText String
+  latitude     Float?
+  longitude    Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  coverRequests CoverRequest[]
+  bookings      Booking[]
+
+  @@index([latitude, longitude])
+}
+
+model Certification {
+  id              String        @id @default(cuid())
+  physioProfileId String
+  physioProfile   PhysioProfile @relation(fields: [physioProfileId], references: [id], onDelete: Cascade)
+
+  // PHICIS | ATMMIF | RFU_PITCHSIDE | FIRST_AID_AT_WORK | AED | DBS_ENHANCED | DBS_BASIC | OTHER
+  type        String
+  otherName   String?
+  issuingBody String?
+  issueDate   DateTime?
+  expiryDate  DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([physioProfileId])
+}
+
+model CoverRequest {
+  id              String      @id @default(cuid())
+  clubProfileId   String
+  clubProfile     ClubProfile @relation(fields: [clubProfileId], references: [id], onDelete: Cascade)
+
+  dateNeeded    DateTime
+  startTime     String
+  endTime       String
+  venueName     String
+  venuePostcode String
+  sport         String
+  ageGroup      String
+
+  // MATCHDAY | TRAINING | ASSESSMENT | TAPING | TOURNAMENT | ADVISE_ME
+  coverType String
+
+  requiresDbs      Boolean @default(false)
+  minCertification String? // one of the Certification.type values, optional
+
+  budget  Float?
+  // THIS_WEEKEND | WITHIN_2_WEEKS | ONGOING_WEEKLY | JUST_ENQUIRING
+  urgency String  @default("WITHIN_2_WEEKS")
+  notes   String?
+
+  // OPEN | MATCHED | COMPLETED | CANCELLED
+  status String @default("OPEN")
+
+  createdAt DateTime @default(now())
+
+  applications Application[]
+  booking      Booking?
+
+  @@index([clubProfileId])
+  @@index([status])
+}
+
+model Application {
+  id              String        @id @default(cuid())
+  coverRequestId  String
+  coverRequest    CoverRequest  @relation(fields: [coverRequestId], references: [id], onDelete: Cascade)
+  physioProfileId String
+  physioProfile   PhysioProfile @relation(fields: [physioProfileId], references: [id], onDelete: Cascade)
+
+  // PENDING | ACCEPTED | DECLINED | WITHDRAWN
+  status  String  @default("PENDING")
+  message String?
+
+  createdAt DateTime @default(now())
+  booking   Booking?
+
+  @@unique([coverRequestId, physioProfileId])
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  coverRequestId  String        @unique
+  coverRequest    CoverRequest  @relation(fields: [coverRequestId], references: [id], onDelete: Cascade)
+  applicationId   String        @unique
+  application     Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  physioProfileId String
+  physioProfile   PhysioProfile @relation(fields: [physioProfileId], references: [id], onDelete: Cascade)
+  clubProfileId   String
+  clubProfile     ClubProfile   @relation(fields: [clubProfileId], references: [id], onDelete: Cascade)
+
+  confirmedAt DateTime  @default(now())
+  completedAt DateTime?
+
+  ratings Rating[]
+
+  @@index([physioProfileId])
+  @@index([clubProfileId])
+}
+
+model Rating {
+  id        String  @id @default(cuid())
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  raterId   String
+  rater     User    @relation("RatingsGiven", fields: [raterId], references: [id])
+  ratedId   String
+  rated     User    @relation("RatingsReceived", fields: [ratedId], references: [id])
+
+  score   Int // 1-5
+  comment String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([bookingId, raterId])
+  @@index([ratedId])
+}

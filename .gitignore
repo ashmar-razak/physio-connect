@@ -1,0 +1,22 @@
+node_modules/
+.env
+.env.local
+dist/
+build/
+*.log
+.DS_Store
+
+# backend
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+backend/generated/
+
+# expo
+frontend/.expo/
+frontend/dist/
+frontend/web-build/
+frontend/*.jks
+frontend/*.p8
+frontend/*.p12
+frontend/*.key
+frontend/*.mobileprovision
