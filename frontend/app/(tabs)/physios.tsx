@@ -3,11 +3,13 @@ import { FlatList, RefreshControl, StyleSheet, Switch, Text, View } from "react-
 import { Screen } from "@/components/Screen";
 import { TextField } from "@/components/TextField";
 import { ChipGroup } from "@/components/Chip";
+import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { PhysioListItem } from "@/components/PhysioListItem";
 import { physioApi } from "@/api/endpoints";
 import { CERTIFICATION_LABEL, CERTIFICATION_TYPES, type CertificationType, type PhysioProfile, type TrustTier } from "@/api/types";
 import { useAuth } from "@/context/AuthContext";
+import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import { colors, spacing } from "@/theme/colors";
 
 const TIER_OPTIONS: { value: TrustTier; label: string }[] = [
@@ -25,12 +27,16 @@ export default function PhysiosScreen() {
   const [insuredForPitchside, setInsuredForPitchside] = useState(false);
   const [nearMe, setNearMe] = useState(false);
   const [radiusMiles, setRadiusMiles] = useState("25");
+  const { coords: currentCoords, loading: locating, error: locationError, request: requestLocation, clear: clearLocation } = useCurrentLocation();
 
   const [physios, setPhysios] = useState<PhysioProfile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const club = user?.clubProfile;
+  const usingRadius = !!currentCoords || nearMe;
+  const lat = currentCoords?.latitude ?? (nearMe ? club?.latitude ?? undefined : undefined);
+  const lng = currentCoords?.longitude ?? (nearMe ? club?.longitude ?? undefined : undefined);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -41,9 +47,9 @@ export default function PhysiosScreen() {
         certification,
         minTrustTier,
         insuredForPitchside: insuredForPitchside || undefined,
-        lat: nearMe && club?.latitude != null ? club.latitude : undefined,
-        lng: nearMe && club?.longitude != null ? club.longitude : undefined,
-        radiusMiles: nearMe ? Number(radiusMiles) || undefined : undefined,
+        lat: usingRadius ? lat : undefined,
+        lng: usingRadius ? lng : undefined,
+        radiusMiles: usingRadius ? Number(radiusMiles) || undefined : undefined,
       });
       setPhysios(results);
     } catch (err) {
@@ -51,7 +57,7 @@ export default function PhysiosScreen() {
     } finally {
       setLoading(false);
     }
-  }, [sport, certification, minTrustTier, insuredForPitchside, nearMe, radiusMiles, club?.latitude, club?.longitude]);
+  }, [sport, certification, minTrustTier, insuredForPitchside, usingRadius, lat, lng, radiusMiles]);
 
   useEffect(() => {
     load();
@@ -88,10 +94,28 @@ export default function PhysiosScreen() {
             {club ? (
               <View style={styles.nearRow}>
                 <Text style={styles.nearLabel}>Near my club ({club.locationText})</Text>
-                <Switch value={nearMe} onValueChange={setNearMe} trackColor={{ true: colors.primary }} />
+                <Switch value={nearMe} onValueChange={setNearMe} disabled={!!currentCoords} trackColor={{ true: colors.primary }} />
               </View>
             ) : null}
-            {nearMe ? (
+
+            {currentCoords ? (
+              <View style={styles.nearRow}>
+                <Text style={styles.nearLabel}>📍 Using your current location</Text>
+                <Button title="Clear" variant="ghost" onPress={clearLocation} />
+              </View>
+            ) : (
+              <Button
+                title="📍 Use My Current Location"
+                variant="secondary"
+                onPress={requestLocation}
+                loading={locating}
+                style={styles.locationBtn}
+                testID="use-current-location-btn"
+              />
+            )}
+            {locationError ? <Text style={styles.locationError}>{locationError}</Text> : null}
+
+            {usingRadius ? (
               <TextField label="Radius (miles)" value={radiusMiles} onChangeText={setRadiusMiles} keyboardType="number-pad" />
             ) : null}
           </Card>
@@ -112,5 +136,7 @@ const styles = StyleSheet.create({
   filterTitle: { fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: spacing.md },
   nearRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.sm },
   nearLabel: { color: colors.text, fontWeight: "600", flexShrink: 1, marginRight: spacing.sm },
+  locationBtn: { marginBottom: spacing.sm },
+  locationError: { color: colors.danger, fontSize: 13, marginBottom: spacing.sm },
   empty: { textAlign: "center", color: colors.textMuted, marginTop: spacing.xl },
 });

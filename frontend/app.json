@@ -26,7 +26,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Physio Connect uses your location to find nearby cover jobs and physios."
+        }
+      ]
     ]
   }
 }
