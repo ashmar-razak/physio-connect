@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { Card } from "@/components/Card";
 import { TrustBadge } from "@/components/TrustBadge";
 import { RegistrationBadge } from "@/components/RegistrationBadge";
+import { InsuranceBadge } from "@/components/InsuranceBadge";
 import { StarRating } from "@/components/StarRating";
 import { colors, spacing } from "@/theme/colors";
 import type { PhysioProfile } from "@/api/types";
@@ -16,7 +17,10 @@ export function PhysioListItem({ physio }: { physio: PhysioProfile }) {
           <Text style={styles.name}>{physio.fullName}</Text>
           <TrustBadge tier={physio.trustTier} certCount={physio.certificationCount} />
         </View>
-        <RegistrationBadge body={physio.registrationBody} number={physio.registrationNumber} verified={physio.registrationVerified} />
+        <View style={styles.badgeRow}>
+          <RegistrationBadge body={physio.registrationBody} number={physio.registrationNumber} verified={physio.registrationVerified} />
+          <InsuranceBadge status={physio.insuranceStatus} />
+        </View>
         <Text style={styles.meta}>
           {physio.locationText}
           {physio.distanceMiles !== undefined ? ` · ${physio.distanceMiles.toFixed(1)} mi away` : ""}
@@ -34,6 +38,7 @@ export function PhysioListItem({ physio }: { physio: PhysioProfile }) {
 const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: spacing.xs, gap: spacing.sm },
   name: { fontSize: 18, fontWeight: "700", color: colors.text, flexShrink: 1 },
+  badgeRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
   meta: { color: colors.textMuted, fontSize: 13, marginTop: spacing.xs },
   footerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: spacing.sm },
   rate: { color: colors.text, fontWeight: "600" },

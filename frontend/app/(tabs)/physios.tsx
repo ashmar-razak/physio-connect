@@ -22,6 +22,7 @@ export default function PhysiosScreen() {
   const [sport, setSport] = useState("");
   const [certification, setCertification] = useState<CertificationType | undefined>();
   const [minTrustTier, setMinTrustTier] = useState<TrustTier | undefined>();
+  const [insuredForPitchside, setInsuredForPitchside] = useState(false);
   const [nearMe, setNearMe] = useState(false);
   const [radiusMiles, setRadiusMiles] = useState("25");
 
@@ -39,6 +40,7 @@ export default function PhysiosScreen() {
         sport: sport || undefined,
         certification,
         minTrustTier,
+        insuredForPitchside: insuredForPitchside || undefined,
         lat: nearMe && club?.latitude != null ? club.latitude : undefined,
         lng: nearMe && club?.longitude != null ? club.longitude : undefined,
         radiusMiles: nearMe ? Number(radiusMiles) || undefined : undefined,
@@ -49,7 +51,7 @@ export default function PhysiosScreen() {
     } finally {
       setLoading(false);
     }
-  }, [sport, certification, minTrustTier, nearMe, radiusMiles, club?.latitude, club?.longitude]);
+  }, [sport, certification, minTrustTier, insuredForPitchside, nearMe, radiusMiles, club?.latitude, club?.longitude]);
 
   useEffect(() => {
     load();
@@ -79,6 +81,10 @@ export default function PhysiosScreen() {
               value={minTrustTier}
               onChange={(v) => setMinTrustTier((prev) => (prev === v ? undefined : v))}
             />
+            <View style={styles.nearRow}>
+              <Text style={styles.nearLabel}>Insured for pitchside work</Text>
+              <Switch value={insuredForPitchside} onValueChange={setInsuredForPitchside} trackColor={{ true: colors.primary }} />
+            </View>
             {club ? (
               <View style={styles.nearRow}>
                 <Text style={styles.nearLabel}>Near my club ({club.locationText})</Text>

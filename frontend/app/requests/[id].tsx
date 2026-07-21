@@ -7,6 +7,7 @@ import { Button } from "@/components/Button";
 import { TextField } from "@/components/TextField";
 import { TrustBadge } from "@/components/TrustBadge";
 import { RegistrationBadge } from "@/components/RegistrationBadge";
+import { InsuranceBadge } from "@/components/InsuranceBadge";
 import { StarRating } from "@/components/StarRating";
 import { requestApi } from "@/api/endpoints";
 import { ApiError } from "@/api/client";
@@ -183,11 +184,14 @@ export default function CoverRequestDetailScreen() {
                   {application.physio ? <TrustBadge tier={application.physio.trustTier} certCount={application.physio.certificationCount} /> : null}
                 </View>
                 {application.physio ? (
-                  <RegistrationBadge
-                    body={application.physio.registrationBody}
-                    number={application.physio.registrationNumber}
-                    verified={application.physio.registrationVerified}
-                  />
+                  <View style={styles.applicantBadgeRow}>
+                    <RegistrationBadge
+                      body={application.physio.registrationBody}
+                      number={application.physio.registrationNumber}
+                      verified={application.physio.registrationVerified}
+                    />
+                    <InsuranceBadge status={application.physio.insuranceStatus} />
+                  </View>
                 ) : null}
                 {application.physio ? <StarRating value={application.physio.averageRating} count={application.physio.ratingCount} size={14} /> : null}
                 {application.message ? <Text style={styles.applicantMessage}>"{application.message}"</Text> : null}
@@ -234,6 +238,7 @@ const styles = StyleSheet.create({
   applicationCard: { marginBottom: spacing.sm },
   applicantHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: spacing.sm, marginBottom: spacing.xs },
   applicantName: { fontSize: 16, fontWeight: "700", color: colors.text, flexShrink: 1 },
+  applicantBadgeRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, marginBottom: spacing.xs },
   applicantMessage: { color: colors.text, fontStyle: "italic", marginTop: spacing.sm },
   applicantStatusRow: { marginTop: spacing.sm },
   applicantStatus: { color: colors.textMuted, fontWeight: "700", fontSize: 12 },

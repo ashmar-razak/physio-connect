@@ -5,6 +5,7 @@ import { Screen } from "@/components/Screen";
 import { Card } from "@/components/Card";
 import { TrustBadge } from "@/components/TrustBadge";
 import { RegistrationBadge } from "@/components/RegistrationBadge";
+import { InsuranceBadge } from "@/components/InsuranceBadge";
 import { StarRating } from "@/components/StarRating";
 import { physioApi, ratingsApi } from "@/api/endpoints";
 import { CERTIFICATION_LABEL } from "@/api/types";
@@ -54,6 +55,7 @@ export default function PhysioDetailScreen() {
       <View style={styles.badgeRow}>
         <TrustBadge tier={physio.trustTier} certCount={physio.certificationCount} />
         <RegistrationBadge body={physio.registrationBody} number={physio.registrationNumber} verified={physio.registrationVerified} />
+        <InsuranceBadge status={physio.insuranceStatus} />
       </View>
       <StarRating value={physio.averageRating} count={physio.ratingCount} size={18} />
 

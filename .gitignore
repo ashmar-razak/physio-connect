@@ -10,6 +10,7 @@ build/
 backend/prisma/dev.db
 backend/prisma/dev.db-journal
 backend/generated/
+backend/uploads/
 
 # expo
 frontend/.expo/

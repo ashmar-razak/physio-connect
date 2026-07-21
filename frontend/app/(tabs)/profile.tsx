@@ -1,17 +1,27 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Switch, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { TextField } from "@/components/TextField";
+import { ChipGroup } from "@/components/Chip";
 import { TrustBadge } from "@/components/TrustBadge";
 import { RegistrationBadge } from "@/components/RegistrationBadge";
+import { InsuranceBadge } from "@/components/InsuranceBadge";
 import { StarRating } from "@/components/StarRating";
 import { useAuth } from "@/context/AuthContext";
 import { physioApi, clubApi } from "@/api/endpoints";
 import { ApiError } from "@/api/client";
+import { INSURANCE_COVERAGE } from "@/api/types";
+import type { InsuranceCoverage } from "@/api/types";
 import { colors, spacing } from "@/theme/colors";
+
+const INSURANCE_COVERAGE_LABEL: Record<InsuranceCoverage, string> = {
+  YES: "Yes, covers pitchside",
+  NO: "No",
+  NOT_SURE: "Not sure",
+};
 
 export default function ProfileScreen() {
   const { user, logout, refreshUser } = useAuth();
@@ -28,6 +38,13 @@ export default function ProfileScreen() {
   const [dayRate, setDayRate] = useState(physio?.dayRate ? String(physio.dayRate) : "");
   const [travelRadiusMiles, setTravelRadiusMiles] = useState(physio ? String(physio.travelRadiusMiles) : "");
 
+  const [hasInsurance, setHasInsurance] = useState(physio?.hasInsurance ?? false);
+  const [insurer, setInsurer] = useState(physio?.insurer ?? "");
+  const [insurancePolicyNumber, setInsurancePolicyNumber] = useState(physio?.insurancePolicyNumber ?? "");
+  const [insuranceCoversPitchside, setInsuranceCoversPitchside] = useState<InsuranceCoverage | undefined>(
+    physio?.insuranceCoversPitchside ?? undefined
+  );
+
   async function save() {
     setSaving(true);
     setError(null);
@@ -39,6 +56,10 @@ export default function ProfileScreen() {
           locationText: locationText || undefined,
           dayRate: dayRate ? Number(dayRate) : undefined,
           travelRadiusMiles: travelRadiusMiles ? Number(travelRadiusMiles) : undefined,
+          hasInsurance,
+          insurer: hasInsurance ? insurer || undefined : undefined,
+          insurancePolicyNumber: hasInsurance ? insurancePolicyNumber || undefined : undefined,
+          insuranceCoversPitchside: hasInsurance ? insuranceCoversPitchside : undefined,
         });
       } else if (club) {
         await clubApi.updateMe({ phone: phone || undefined, locationText: locationText || undefined });
@@ -62,6 +83,7 @@ export default function ProfileScreen() {
           <View style={styles.badgeRow}>
             <TrustBadge tier={physio.trustTier} certCount={physio.certificationCount} />
             <RegistrationBadge body={physio.registrationBody} number={physio.registrationNumber} verified={physio.registrationVerified} />
+            <InsuranceBadge status={physio.insuranceStatus} />
           </View>
           <StarRating value={physio.averageRating} count={physio.ratingCount} size={18} />
 
@@ -87,6 +109,45 @@ export default function ProfileScreen() {
             )}
           </Card>
 
+          <Card style={styles.section}>
+            <Text style={styles.cardTitle}>Insurance</Text>
+            {editing ? (
+              <>
+                <View style={styles.switchRow}>
+                  <Text style={styles.switchLabel}>I hold professional indemnity & public liability insurance</Text>
+                  <Switch value={hasInsurance} onValueChange={setHasInsurance} trackColor={{ true: colors.primary }} />
+                </View>
+                {hasInsurance ? (
+                  <>
+                    <TextField label="Insurer" value={insurer} onChangeText={setInsurer} placeholder="e.g. Balens, Howden" />
+                    <TextField label="Policy Number" value={insurancePolicyNumber} onChangeText={setInsurancePolicyNumber} />
+                    <ChipGroup
+                      label="Does it explicitly cover pitchside / event first-aid work?"
+                      options={INSURANCE_COVERAGE.map((c) => ({ value: c, label: INSURANCE_COVERAGE_LABEL[c] }))}
+                      value={insuranceCoversPitchside}
+                      onChange={setInsuranceCoversPitchside}
+                    />
+                  </>
+                ) : null}
+              </>
+            ) : physio.hasInsurance ? (
+              <>
+                <InfoRow label="Insurer" value={physio.insurer || "—"} />
+                <InfoRow label="Policy Number" value={physio.insurancePolicyNumber || "—"} />
+                <InfoRow label="Covers Pitchside" value={physio.insuranceCoversPitchside ? INSURANCE_COVERAGE_LABEL[physio.insuranceCoversPitchside] : "—"} />
+                {physio.insuranceStatus !== "VERIFIED" ? (
+                  <Text style={styles.hint}>
+                    {physio.insuranceCoversPitchside === "YES"
+                      ? "Upload your insurance certificate under Manage Documents to get the Verified badge."
+                      : "Set coverage to \"Yes, covers pitchside\" and upload your certificate under Manage Documents to get the Verified badge."}
+                  </Text>
+                ) : null}
+              </>
+            ) : (
+              <Text style={styles.meta}>No insurance on file yet — add it above so clubs can trust you for pitchside cover.</Text>
+            )}
+          </Card>
+
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           {editing ? (
@@ -103,6 +164,13 @@ export default function ProfileScreen() {
             onPress={() => router.push("/certifications/manage")}
             style={styles.spaced}
             testID="manage-certifications-btn"
+          />
+          <Button
+            title="Manage Documents"
+            variant="secondary"
+            onPress={() => router.push("/documents/manage")}
+            style={styles.spaced}
+            testID="manage-documents-btn"
           />
         </>
       ) : club ? (
@@ -160,6 +228,11 @@ const styles = StyleSheet.create({
   subtitle: { color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.sm },
   badgeRow: { flexDirection: "row", gap: spacing.sm, marginVertical: spacing.sm, flexWrap: "wrap" },
   section: { marginTop: spacing.md },
+  cardTitle: { fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },
+  switchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md, gap: spacing.sm },
+  switchLabel: { color: colors.text, fontWeight: "600", flexShrink: 1 },
+  meta: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
+  hint: { color: colors.warning, fontSize: 13, lineHeight: 18, marginTop: spacing.sm },
   infoRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: spacing.xs, gap: spacing.md },
   infoLabel: { color: colors.textMuted, fontWeight: "600" },
   infoValue: { color: colors.text, flexShrink: 1, textAlign: "right" },

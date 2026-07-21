@@ -7,6 +7,9 @@ import type {
   ClubProfile,
   CoverRequest,
   CoverType,
+  Document,
+  DocumentType,
+  InsuranceCoverage,
   PhysioProfile,
   RegistrationBody,
   Rating,
@@ -54,11 +57,20 @@ export const authApi = {
   me: () => api.get<{ user: User }>("/auth/me"),
 };
 
+export interface UpdatePhysioBody extends Partial<RegisterPhysioBody> {
+  hasInsurance?: boolean;
+  insurer?: string;
+  insurancePolicyNumber?: string;
+  insuranceExpiryDate?: string;
+  insuranceCoversPitchside?: InsuranceCoverage;
+}
+
 export interface PhysioSearchParams {
   sport?: string;
   certification?: CertificationType;
   minRating?: number;
   minTrustTier?: TrustTier;
+  insuredForPitchside?: boolean;
   lat?: number;
   lng?: number;
   radiusMiles?: number;
@@ -75,7 +87,7 @@ export const physioApi = {
   search: (params: PhysioSearchParams = {}) => api.get<{ physios: PhysioProfile[] }>(`/physios${toQueryString(params)}`),
   detail: (id: string) => api.get<{ physio: PhysioProfile }>(`/physios/${id}`),
   me: () => api.get<{ physio: PhysioProfile }>("/physios/me"),
-  updateMe: (body: Partial<RegisterPhysioBody>) => api.patch<{ physio: PhysioProfile }>("/physios/me", body),
+  updateMe: (body: UpdatePhysioBody) => api.patch<{ physio: PhysioProfile }>("/physios/me", body),
   addCertification: (body: {
     type: CertificationType;
     otherName?: string;
@@ -86,6 +98,15 @@ export const physioApi = {
   updateCertification: (certId: string, body: Partial<{ type: CertificationType; otherName: string; issuingBody: string; issueDate: string; expiryDate: string }>) =>
     api.patch(`/physios/me/certifications/${certId}`, body),
   deleteCertification: (certId: string) => api.delete(`/physios/me/certifications/${certId}`),
+  uploadDocument: (type: DocumentType, file: { uri: string; name: string; type: string }) => {
+    const formData = new FormData();
+    formData.append("type", type);
+    // React Native's FormData accepts a {uri, name, type} object for files;
+    // this shape isn't representable in the DOM FormData typings.
+    formData.append("file", file as unknown as Blob);
+    return api.upload<{ document: Document }>("/physios/me/documents", formData);
+  },
+  deleteDocument: (documentId: string) => api.delete(`/physios/me/documents/${documentId}`),
 };
 
 export const clubApi = {

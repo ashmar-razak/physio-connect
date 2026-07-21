@@ -1,13 +1,17 @@
 import { Router } from "express";
 import { z } from "zod";
+import fs from "fs/promises";
+import path from "path";
 import { prisma } from "../db";
 import { requireAuth, requireRole } from "../middleware/auth";
 import { asyncHandler, HttpError } from "../middleware/errorHandler";
-import { serializeCertification, serializePhysio } from "../serializers";
-import { certificationTypeSchema, registrationBodySchema } from "../utils/enums";
+import { upload, UPLOADS_DIR } from "../middleware/upload";
+import { serializeCertification, serializeDocument, serializePhysio } from "../serializers";
+import { certificationTypeSchema, documentTypeSchema, insuranceCoverageSchema, registrationBodySchema } from "../utils/enums";
 import { haversineMiles } from "../utils/distance";
 import { geocodeLocation } from "../utils/geocode";
 import { getRatingStats, getRatingStatsBulk } from "../utils/ratingStats";
+import { getInsuranceDocumentSet, hasInsuranceDocument } from "../utils/insuranceDocuments";
 import { trustTierForCertCount, trustTierRank, TrustTier } from "../utils/trustTier";
 
 const router = Router();
@@ -17,6 +21,7 @@ const searchSchema = z.object({
   certification: certificationTypeSchema.optional(),
   minRating: z.coerce.number().min(0).max(5).optional(),
   minTrustTier: z.enum(["UNVERIFIED", "STANDARD", "BRONZE", "SILVER", "GOLD"]).optional(),
+  insuredForPitchside: z.coerce.boolean().optional(),
   lat: z.coerce.number().optional(),
   lng: z.coerce.number().optional(),
   radiusMiles: z.coerce.number().positive().optional(),
@@ -39,6 +44,7 @@ router.get(
     });
 
     const ratingStats = await getRatingStatsBulk(physios.map((p) => p.userId));
+    const insuranceDocSet = await getInsuranceDocumentSet(physios.map((p) => p.id));
 
     let results = physios.map((profile) => {
       const stats = ratingStats.get(profile.userId) ?? { averageRating: null, ratingCount: 0 };
@@ -47,7 +53,7 @@ router.get(
           ? haversineMiles({ latitude: query.lat, longitude: query.lng }, { latitude: profile.latitude!, longitude: profile.longitude! })
           : undefined;
 
-      return serializePhysio(profile, { ...stats, distanceMiles });
+      return serializePhysio(profile, { ...stats, distanceMiles, hasInsuranceDocument: insuranceDocSet.has(profile.id) });
     });
 
     if (query.minRating !== undefined) {
@@ -56,6 +62,9 @@ router.get(
     if (query.minTrustTier) {
       const minRank = trustTierRank(query.minTrustTier as TrustTier);
       results = results.filter((p) => trustTierRank(p.trustTier) >= minRank);
+    }
+    if (query.insuredForPitchside) {
+      results = results.filter((p) => p.insuranceStatus === "VERIFIED");
     }
     if (query.radiusMiles !== undefined && query.lat !== undefined && query.lng !== undefined) {
       results = results.filter((p) => p.distanceMiles !== undefined && p.distanceMiles <= query.radiusMiles!);
@@ -81,7 +90,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const profile = await prisma.physioProfile.findUnique({
       where: { userId: req.user!.userId },
-      include: { certifications: true },
+      include: { certifications: true, documents: true },
     });
     if (!profile) throw new HttpError(404, "Physio profile not found");
 
@@ -101,6 +110,11 @@ const updateSchema = z.object({
   yearsExperience: z.number().int().min(0).optional(),
   dayRate: z.number().positive().nullable().optional(),
   sports: z.array(z.string().min(1)).min(1).optional(),
+  hasInsurance: z.boolean().optional(),
+  insurer: z.string().optional(),
+  insurancePolicyNumber: z.string().optional(),
+  insuranceExpiryDate: z.coerce.date().optional(),
+  insuranceCoversPitchside: insuranceCoverageSchema.optional(),
 });
 
 router.patch(
@@ -125,7 +139,7 @@ router.patch(
         ...geoUpdate,
         sports: body.sports ? body.sports.join(",") : undefined,
       },
-      include: { certifications: true },
+      include: { certifications: true, documents: true },
     });
 
     const stats = await getRatingStats(updated.userId);
@@ -144,7 +158,8 @@ router.get(
     if (!profile) throw new HttpError(404, "Physio not found");
 
     const stats = await getRatingStats(profile.userId);
-    res.json({ physio: serializePhysio(profile, stats) });
+    const hasInsuranceDoc = await hasInsuranceDocument(profile.id);
+    res.json({ physio: serializePhysio(profile, { ...stats, hasInsuranceDocument: hasInsuranceDoc }) });
   })
 );
 
@@ -201,6 +216,53 @@ router.delete(
     if (!cert || cert.physioProfileId !== profile.id) throw new HttpError(404, "Certification not found");
 
     await prisma.certification.delete({ where: { id: cert.id } });
+    res.status(204).end();
+  })
+);
+
+router.post(
+  "/me/documents",
+  requireAuth,
+  requireRole("PHYSIO"),
+  upload.single("file"),
+  asyncHandler(async (req, res) => {
+    if (!req.file) throw new HttpError(400, "No file uploaded");
+
+    const type = documentTypeSchema.safeParse(req.body.type);
+    if (!type.success) {
+      await fs.unlink(path.join(UPLOADS_DIR, req.file.filename)).catch(() => {});
+      throw new HttpError(400, "Invalid document type");
+    }
+
+    const profile = await prisma.physioProfile.findUnique({ where: { userId: req.user!.userId } });
+    if (!profile) throw new HttpError(404, "Physio profile not found");
+
+    const document = await prisma.document.create({
+      data: {
+        physioProfileId: profile.id,
+        type: type.data,
+        fileName: req.file.originalname,
+        fileUrl: `/uploads/${req.file.filename}`,
+        mimeType: req.file.mimetype,
+      },
+    });
+    res.status(201).json({ document: serializeDocument(document) });
+  })
+);
+
+router.delete(
+  "/me/documents/:documentId",
+  requireAuth,
+  requireRole("PHYSIO"),
+  asyncHandler(async (req, res) => {
+    const profile = await prisma.physioProfile.findUnique({ where: { userId: req.user!.userId } });
+    if (!profile) throw new HttpError(404, "Physio profile not found");
+
+    const document = await prisma.document.findUnique({ where: { id: req.params.documentId } });
+    if (!document || document.physioProfileId !== profile.id) throw new HttpError(404, "Document not found");
+
+    await prisma.document.delete({ where: { id: document.id } });
+    await fs.unlink(path.join(UPLOADS_DIR, path.basename(document.fileUrl))).catch(() => {});
     res.status(204).end();
   })
 );

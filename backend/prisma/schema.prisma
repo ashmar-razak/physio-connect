@@ -46,6 +46,15 @@ model PhysioProfile {
   registrationNumber   String
   registrationVerified Boolean @default(false)
 
+  // Professional indemnity + public liability insurance. A physio's normal
+  // clinic indemnity may not cover pitchside/event first-aid work, so that's
+  // tracked separately from simply "having insurance".
+  hasInsurance             Boolean   @default(false)
+  insurer                  String?
+  insurancePolicyNumber    String?
+  insuranceExpiryDate      DateTime?
+  insuranceCoversPitchside String? // YES | NO | NOT_SURE
+
   yearsExperience Int     @default(0)
   dayRate         Float?
   sports          String // comma-separated list, e.g. "football,rugby"
@@ -54,6 +63,7 @@ model PhysioProfile {
   updatedAt DateTime @updatedAt
 
   certifications Certification[]
+  documents      Document[]
   applications   Application[]
   bookings       Booking[]
 
@@ -96,6 +106,22 @@ model Certification {
   expiryDate  DateTime?
 
   createdAt DateTime @default(now())
+
+  @@index([physioProfileId])
+}
+
+model Document {
+  id              String        @id @default(cuid())
+  physioProfileId String
+  physioProfile   PhysioProfile @relation(fields: [physioProfileId], references: [id], onDelete: Cascade)
+
+  // REGISTRATION | INSURANCE | DBS | PITCHSIDE_QUALIFICATION | OTHER
+  type     String
+  fileName String
+  fileUrl  String
+  mimeType String
+
+  uploadedAt DateTime @default(now())
 
   @@index([physioProfileId])
 }

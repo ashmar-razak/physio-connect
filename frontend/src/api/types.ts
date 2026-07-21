@@ -52,6 +52,21 @@ export type RequestStatus = "OPEN" | "MATCHED" | "COMPLETED" | "CANCELLED";
 export type ApplicationStatus = "PENDING" | "ACCEPTED" | "DECLINED" | "WITHDRAWN";
 export type TrustTier = "UNVERIFIED" | "STANDARD" | "BRONZE" | "SILVER" | "GOLD";
 
+export const INSURANCE_COVERAGE = ["YES", "NO", "NOT_SURE"] as const;
+export type InsuranceCoverage = (typeof INSURANCE_COVERAGE)[number];
+export type InsuranceStatus = "VERIFIED" | "UNCONFIRMED" | "MISSING";
+
+export const DOCUMENT_TYPES = ["REGISTRATION", "INSURANCE", "DBS", "PITCHSIDE_QUALIFICATION", "OTHER"] as const;
+export type DocumentType = (typeof DOCUMENT_TYPES)[number];
+
+export const DOCUMENT_TYPE_LABEL: Record<DocumentType, string> = {
+  REGISTRATION: "Proof of Registration",
+  INSURANCE: "Insurance Certificate",
+  DBS: "DBS Certificate",
+  PITCHSIDE_QUALIFICATION: "Pitchside Qualification",
+  OTHER: "Other",
+};
+
 export interface Certification {
   id: string;
   physioProfileId: string;
@@ -61,6 +76,16 @@ export interface Certification {
   issueDate?: string | null;
   expiryDate?: string | null;
   createdAt: string;
+}
+
+export interface Document {
+  id: string;
+  physioProfileId: string;
+  type: DocumentType;
+  fileName: string;
+  fileUrl: string;
+  mimeType: string;
+  uploadedAt: string;
 }
 
 export interface PhysioProfile {
@@ -76,12 +101,19 @@ export interface PhysioProfile {
   registrationBody: RegistrationBody;
   registrationNumber: string;
   registrationVerified: boolean;
+  hasInsurance: boolean;
+  insurer?: string | null;
+  insurancePolicyNumber?: string | null;
+  insuranceExpiryDate?: string | null;
+  insuranceCoversPitchside?: InsuranceCoverage | null;
+  insuranceStatus: InsuranceStatus;
   yearsExperience: number;
   dayRate?: number | null;
   sports: string[];
   certifications?: Certification[];
   certificationCount: number;
   trustTier: TrustTier;
+  documents?: Document[];
   averageRating: number | null;
   ratingCount: number;
   distanceMiles?: number;

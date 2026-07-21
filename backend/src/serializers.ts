@@ -1,11 +1,17 @@
-import type { Certification, ClubProfile, CoverRequest, Application, Booking, PhysioProfile, Rating, User } from "@prisma/client";
+import type { Certification, ClubProfile, CoverRequest, Application, Booking, Document, PhysioProfile, Rating, User } from "@prisma/client";
 import { trustTierForCertCount } from "./utils/trustTier";
+import { insuranceStatusFor } from "./utils/insuranceStatus";
 
 export function serializePhysio(
-  profile: PhysioProfile & { certifications?: Certification[] },
-  extras?: { averageRating?: number | null; ratingCount?: number; distanceMiles?: number }
+  profile: PhysioProfile & { certifications?: Certification[]; documents?: Document[] },
+  extras?: { averageRating?: number | null; ratingCount?: number; distanceMiles?: number; hasInsuranceDocument?: boolean }
 ) {
   const certCount = profile.certifications?.length ?? 0;
+  // Falls back to the already-fetched documents array (owner-facing routes
+  // like /physios/me include it in full); public routes must pass
+  // extras.hasInsuranceDocument explicitly rather than fetching documents,
+  // so a physio's document list is never exposed to other users.
+  const hasInsuranceDoc = extras?.hasInsuranceDocument ?? (profile.documents?.some((d) => d.type === "INSURANCE") ?? false);
   return {
     id: profile.id,
     userId: profile.userId,
@@ -19,16 +25,35 @@ export function serializePhysio(
     registrationBody: profile.registrationBody,
     registrationNumber: profile.registrationNumber,
     registrationVerified: profile.registrationVerified,
+    hasInsurance: profile.hasInsurance,
+    insurer: profile.insurer,
+    insurancePolicyNumber: profile.insurancePolicyNumber,
+    insuranceExpiryDate: profile.insuranceExpiryDate,
+    insuranceCoversPitchside: profile.insuranceCoversPitchside,
+    insuranceStatus: insuranceStatusFor(profile, hasInsuranceDoc),
     yearsExperience: profile.yearsExperience,
     dayRate: profile.dayRate,
     sports: profile.sports ? profile.sports.split(",").filter(Boolean) : [],
     certifications: profile.certifications?.map(serializeCertification),
     certificationCount: certCount,
     trustTier: trustTierForCertCount(certCount),
+    documents: profile.documents?.map(serializeDocument),
     averageRating: extras?.averageRating ?? null,
     ratingCount: extras?.ratingCount ?? 0,
     distanceMiles: extras?.distanceMiles,
     createdAt: profile.createdAt,
+  };
+}
+
+export function serializeDocument(document: Document) {
+  return {
+    id: document.id,
+    physioProfileId: document.physioProfileId,
+    type: document.type,
+    fileName: document.fileName,
+    fileUrl: document.fileUrl,
+    mimeType: document.mimeType,
+    uploadedAt: document.uploadedAt,
   };
 }
 

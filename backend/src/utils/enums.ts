@@ -41,3 +41,9 @@ export const APPLICATION_STATUSES = ["PENDING", "ACCEPTED", "DECLINED", "WITHDRA
 
 // Certifications that count toward "credentialed for under-18s" checks.
 export const DBS_TYPES = ["DBS_ENHANCED", "DBS_BASIC"] as const;
+
+export const INSURANCE_COVERAGE = ["YES", "NO", "NOT_SURE"] as const;
+export const insuranceCoverageSchema = z.enum(INSURANCE_COVERAGE);
+
+export const DOCUMENT_TYPES = ["REGISTRATION", "INSURANCE", "DBS", "PITCHSIDE_QUALIFICATION", "OTHER"] as const;
+export const documentTypeSchema = z.enum(DOCUMENT_TYPES);

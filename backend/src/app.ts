@@ -7,12 +7,14 @@ import requestRoutes from "./routes/requests";
 import bookingRoutes from "./routes/bookings";
 import ratingRoutes from "./routes/ratings";
 import { errorHandler } from "./middleware/errorHandler";
+import { UPLOADS_DIR } from "./middleware/upload";
 
 export function createApp() {
   const app = express();
 
   app.use(cors());
   app.use(express.json());
+  app.use("/uploads", express.static(UPLOADS_DIR));
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
 

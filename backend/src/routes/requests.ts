@@ -170,7 +170,7 @@ router.get(
 
     const applications = await prisma.application.findMany({
       where: { coverRequestId: request.id },
-      include: { physioProfile: { include: { certifications: true } } },
+      include: { physioProfile: { include: { certifications: true, documents: true } } },
       orderBy: { createdAt: "asc" },
     });
     res.json({ applications: applications.map(serializeApplication) });
