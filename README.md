@@ -50,6 +50,15 @@ npm run web      # or: npm run ios / npm run android
 
 The app auto-detects the backend URL (`localhost` for web/iOS simulator, `10.0.2.2` for Android emulator, or your machine's LAN IP for a physical device on the same network). Override with `EXPO_PUBLIC_API_URL` if needed.
 
+### Running tests
+
+```bash
+cd backend
+npm test
+```
+
+Runs the full suite (55 tests: unit tests for pure logic like trust tiers/insurance status/distance, plus integration tests hitting the real Express app + Prisma against an isolated `backend/prisma/test.db` via supertest — never the dev database). Covers auth/registration validation, physio search/filtering/trust-tier ranking, certifications, document upload + admin review, the full cover-request lifecycle (post → apply → accept with auto-decline → complete → bidirectional rating), admin role-gating, and every notification trigger.
+
 ### Moving to Postgres
 
 Install Postgres, then in `backend/.env`:
@@ -66,8 +75,10 @@ and change `datasource db { provider = "sqlite" ... }` to `provider = "postgresq
 backend/
   prisma/schema.prisma   data model
   prisma/seed.ts         sample data
-  src/routes/            auth, physios, clubs, requests, bookings, ratings
-  src/utils/             trust tier calc, haversine distance, geocoding
+  src/routes/            auth, physios, clubs, requests, bookings, ratings, admin, notifications
+  src/utils/             trust tier calc, haversine distance, geocoding, insurance status
+  tests/unit/            pure-logic tests (no DB)
+  tests/integration/     supertest against the real app + isolated test.db
 frontend/
   app/                   expo-router screens (file-based routing)
   src/api/               typed API client + endpoint wrappers

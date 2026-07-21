@@ -9,6 +9,8 @@ build/
 # backend
 backend/prisma/dev.db
 backend/prisma/dev.db-journal
+backend/prisma/test.db
+backend/prisma/test.db-journal
 backend/generated/
 backend/uploads/
 
