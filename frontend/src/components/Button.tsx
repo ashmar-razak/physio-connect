@@ -1,6 +1,6 @@
 import React from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, TouchableOpacityProps } from "react-native";
-import { colors, radius, spacing } from "@/theme/colors";
+import { colors, radius, shadow, spacing } from "@/theme/colors";
 
 type Variant = "primary" | "secondary" | "danger" | "ghost";
 
@@ -41,9 +41,9 @@ const styles = StyleSheet.create({
 });
 
 const variantStyles = StyleSheet.create({
-  primary: { backgroundColor: colors.primary },
+  primary: { backgroundColor: colors.primary, ...shadow.button },
   secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.primary },
-  danger: { backgroundColor: colors.danger },
+  danger: { backgroundColor: colors.danger, ...shadow.button },
   ghost: { backgroundColor: "transparent" },
 });
 

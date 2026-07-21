@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   listContent: { padding: spacing.lg, paddingBottom: spacing.xl * 2 },
   markAllBtn: { marginBottom: spacing.md },
   card: { marginBottom: spacing.sm },
-  unreadCard: { borderColor: colors.primary },
+  unreadCard: { borderWidth: 1.5, borderColor: colors.primary },
   row: { flexDirection: "row", gap: spacing.sm },
   icon: { fontSize: 22 },
   textCol: { flex: 1 },
