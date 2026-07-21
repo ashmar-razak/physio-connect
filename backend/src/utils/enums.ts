@@ -55,3 +55,13 @@ export const documentStatusSchema = z.enum(DOCUMENT_STATUSES);
 // registration, only seeded/provisioned directly. AccountRole is the wider
 // type used for JWTs and auth middleware, which do need to recognize it.
 export type AccountRole = (typeof ROLES)[number] | "ADMIN";
+
+export const NOTIFICATION_TYPES = [
+  "NEW_APPLICATION",
+  "APPLICATION_ACCEPTED",
+  "APPLICATION_DECLINED",
+  "NEW_RATING",
+  "DOCUMENT_REVIEWED",
+  "REGISTRATION_VERIFIED",
+] as const;
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

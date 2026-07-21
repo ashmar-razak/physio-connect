@@ -26,6 +26,8 @@ model User {
 
   ratingsGiven    Rating[] @relation("RatingsGiven")
   ratingsReceived Rating[] @relation("RatingsReceived")
+
+  notifications Notification[]
 }
 
 model PhysioProfile {
@@ -220,4 +222,24 @@ model Rating {
 
   @@unique([bookingId, raterId])
   @@index([ratedId])
+}
+
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // NEW_APPLICATION | APPLICATION_ACCEPTED | APPLICATION_DECLINED | NEW_RATING
+  // | DOCUMENT_REVIEWED | REGISTRATION_VERIFIED
+  type  String
+  title String
+  body  String
+  // JSON-encoded payload for client-side navigation, e.g. {"coverRequestId": "..."}
+  data  String?
+
+  read Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
 }

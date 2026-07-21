@@ -7,6 +7,7 @@ import { serializeApplication, serializeBooking, serializeCoverRequest } from ".
 import { certificationTypeSchema, coverTypeSchema, urgencySchema } from "../utils/enums";
 import { haversineMiles } from "../utils/distance";
 import { geocodeLocation } from "../utils/geocode";
+import { notifyUser } from "../utils/notifications";
 
 const router = Router();
 
@@ -140,7 +141,10 @@ router.post(
     const physio = await prisma.physioProfile.findUnique({ where: { userId: req.user!.userId } });
     if (!physio) throw new HttpError(404, "Physio profile not found");
 
-    const request = await prisma.coverRequest.findUnique({ where: { id: req.params.id } });
+    const request = await prisma.coverRequest.findUnique({
+      where: { id: req.params.id },
+      include: { clubProfile: true },
+    });
     if (!request) throw new HttpError(404, "Cover request not found");
     if (request.status !== "OPEN") throw new HttpError(400, "This request is no longer open");
 
@@ -153,6 +157,15 @@ router.post(
       data: { coverRequestId: request.id, physioProfileId: physio.id, message: body.message },
       include: { physioProfile: true, coverRequest: true },
     });
+
+    await notifyUser(
+      request.clubProfile.userId,
+      "NEW_APPLICATION",
+      "New application",
+      `${physio.fullName} applied to cover ${request.venueName}.`,
+      { coverRequestId: request.id, applicationId: application.id }
+    );
+
     res.status(201).json({ application: serializeApplication(application) });
   })
 );
@@ -230,6 +243,14 @@ router.post(
     }
     if (application.coverRequest.status !== "OPEN") throw new HttpError(400, "This request is no longer open");
 
+    // Fetched before the transaction so we know who to notify as declined
+    // once it commits — a notification failure must never roll back the
+    // actual accept, so this stays outside the transaction entirely.
+    const otherPending = await prisma.application.findMany({
+      where: { coverRequestId: application.coverRequestId, id: { not: application.id }, status: "PENDING" },
+      include: { physioProfile: true },
+    });
+
     const booking = await prisma.$transaction(async (tx) => {
       const created = await tx.booking.create({
         data: {
@@ -251,6 +272,23 @@ router.post(
       return created;
     });
 
+    await notifyUser(
+      booking.physioProfile.userId,
+      "APPLICATION_ACCEPTED",
+      "Application accepted",
+      `${booking.clubProfile.clubName} accepted your application for ${booking.coverRequest.venueName}.`,
+      { coverRequestId: booking.coverRequestId, bookingId: booking.id }
+    );
+    for (const declined of otherPending) {
+      await notifyUser(
+        declined.physioProfile.userId,
+        "APPLICATION_DECLINED",
+        "Application declined",
+        `${booking.clubProfile.clubName} filled the cover for ${booking.coverRequest.venueName} with someone else.`,
+        { coverRequestId: application.coverRequestId }
+      );
+    }
+
     res.status(201).json({ booking: serializeBooking(booking) });
   })
 );
@@ -265,13 +303,22 @@ router.post(
 
     const application = await prisma.application.findUnique({
       where: { id: req.params.applicationId },
-      include: { coverRequest: true },
+      include: { coverRequest: true, physioProfile: true },
     });
     if (!application || application.coverRequest.clubProfileId !== club.id) {
       throw new HttpError(404, "Application not found");
     }
 
     const updated = await prisma.application.update({ where: { id: application.id }, data: { status: "DECLINED" } });
+
+    await notifyUser(
+      application.physioProfile.userId,
+      "APPLICATION_DECLINED",
+      "Application declined",
+      `${club.clubName} declined your application for ${application.coverRequest.venueName}.`,
+      { coverRequestId: application.coverRequestId }
+    );
+
     res.json({ application: serializeApplication(updated) });
   })
 );

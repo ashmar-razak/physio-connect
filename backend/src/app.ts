@@ -7,6 +7,7 @@ import requestRoutes from "./routes/requests";
 import bookingRoutes from "./routes/bookings";
 import ratingRoutes from "./routes/ratings";
 import adminRoutes from "./routes/admin";
+import notificationRoutes from "./routes/notifications";
 import { errorHandler } from "./middleware/errorHandler";
 import { UPLOADS_DIR } from "./middleware/upload";
 
@@ -26,6 +27,7 @@ export function createApp() {
   app.use("/bookings", bookingRoutes);
   app.use("/ratings", ratingRoutes);
   app.use("/admin", adminRoutes);
+  app.use("/notifications", notificationRoutes);
 
   app.use(errorHandler);
 

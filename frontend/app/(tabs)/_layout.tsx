@@ -1,6 +1,7 @@
 import { Redirect, Tabs } from "expo-router";
 import { ActivityIndicator, ColorValue, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/context/NotificationsContext";
 import { colors } from "@/theme/colors";
 
 function TabIcon({ symbol, color }: { symbol: string; color: ColorValue }) {
@@ -9,6 +10,7 @@ function TabIcon({ symbol, color }: { symbol: string; color: ColorValue }) {
 
 export default function TabsLayout() {
   const { user, isLoading } = useAuth();
+  const { unreadCount } = useNotifications();
   const isClub = user?.role === "CLUB";
   const isPhysio = user?.role === "PHYSIO";
   const isAdmin = user?.role === "ADMIN";
@@ -82,6 +84,15 @@ export default function TabsLayout() {
           title: "Verification",
           href: isAdmin ? undefined : null,
           tabBarIcon: ({ color }) => <TabIcon symbol="🛡️" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: "Alerts",
+          href: isAdmin ? null : undefined,
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+          tabBarIcon: ({ color }) => <TabIcon symbol="🔔" color={color} />,
         }}
       />
       <Tabs.Screen

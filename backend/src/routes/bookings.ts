@@ -4,6 +4,7 @@ import { prisma } from "../db";
 import { requireAuth } from "../middleware/auth";
 import { asyncHandler, HttpError } from "../middleware/errorHandler";
 import { serializeBooking, serializeRating } from "../serializers";
+import { notifyUser } from "../utils/notifications";
 
 const router = Router();
 
@@ -84,6 +85,16 @@ router.post(
     const rating = await prisma.rating.create({
       data: { bookingId: booking.id, raterId: req.user!.userId, ratedId, score: body.score, comment: body.comment },
     });
+
+    const raterName = isPhysio ? booking.physioProfile.fullName : booking.clubProfile.clubName;
+    await notifyUser(
+      ratedId,
+      "NEW_RATING",
+      "New rating received",
+      `${raterName} rated you ${body.score}/5 for ${booking.coverRequest.venueName}.`,
+      { bookingId: booking.id }
+    );
+
     res.status(201).json({ rating: serializeRating(rating) });
   })
 );

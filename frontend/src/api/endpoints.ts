@@ -1,6 +1,7 @@
 import { api } from "./client";
 import type {
   AdminPhysio,
+  AppNotification,
   Application,
   Booking,
   Certification,
@@ -173,4 +174,11 @@ export const adminApi = {
     api.post<{ physio: AdminPhysio }>(`/admin/physios/${id}/registration-verification`, { verified }),
   reviewDocument: (documentId: string, status: Exclude<DocumentStatus, "PENDING">, note?: string) =>
     api.post<{ document: Document }>(`/admin/documents/${documentId}/review`, { status, note }),
+};
+
+export const notificationsApi = {
+  list: () => api.get<{ notifications: AppNotification[] }>("/notifications"),
+  unreadCount: () => api.get<{ count: number }>("/notifications/unread-count"),
+  markRead: (id: string) => api.post<{ notification: AppNotification }>(`/notifications/${id}/read`),
+  markAllRead: () => api.post<void>("/notifications/read-all"),
 };

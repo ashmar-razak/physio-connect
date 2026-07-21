@@ -14,6 +14,7 @@ A matchmaking app connecting sports physios with teams and clubs needing cover �
 - **Bidirectional star ratings**: after a booking is marked complete, both the club and the physio can rate each other (1–5 stars + comment). Average ratings show on both physio and club profiles.
 - **Location-aware matching**: profiles are geocoded (via OpenStreetMap Nominatim) from a free-text location, and both physio and club search support filtering/sorting by distance and travel radius.
 - **Cover request lifecycle**: club posts a request → physios browse/apply → club accepts one application (auto-declining the rest) → booking is created → either party marks it complete → both rate each other.
+- **In-app notifications**: a polling badge (every 20s) and alerts list cover new applications, accept/decline, new ratings, document review outcomes, and registration verification — tapping one marks it read and deep-links to the relevant screen. This is in-app only; real push notifications (lock-screen alerts via Expo push) would need a physical device/EAS setup to build and test, which wasn't available in this environment — the data model here (`Notification` per user, typed by event) is designed so that's a thin addition later, not a rebuild.
 
 ## Stack
 

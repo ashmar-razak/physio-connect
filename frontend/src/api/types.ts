@@ -217,3 +217,32 @@ export interface Rating {
   comment?: string | null;
   createdAt: string;
 }
+
+export const NOTIFICATION_TYPES = [
+  "NEW_APPLICATION",
+  "APPLICATION_ACCEPTED",
+  "APPLICATION_DECLINED",
+  "NEW_RATING",
+  "DOCUMENT_REVIEWED",
+  "REGISTRATION_VERIFIED",
+] as const;
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
+export const NOTIFICATION_ICON: Record<NotificationType, string> = {
+  NEW_APPLICATION: "✉️",
+  APPLICATION_ACCEPTED: "✅",
+  APPLICATION_DECLINED: "❌",
+  NEW_RATING: "⭐",
+  DOCUMENT_REVIEWED: "📄",
+  REGISTRATION_VERIFIED: "🛡️",
+};
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  data?: { coverRequestId?: string; applicationId?: string; bookingId?: string; documentId?: string } | null;
+  read: boolean;
+  createdAt: string;
+}

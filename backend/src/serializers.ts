@@ -1,4 +1,4 @@
-import type { Certification, ClubProfile, CoverRequest, Application, Booking, Document, PhysioProfile, Rating, User } from "@prisma/client";
+import type { Certification, ClubProfile, CoverRequest, Application, Booking, Document, Notification, PhysioProfile, Rating, User } from "@prisma/client";
 import { trustTierForCertCount } from "./utils/trustTier";
 import { insuranceStatusFor } from "./utils/insuranceStatus";
 
@@ -180,5 +180,26 @@ export function serializeRating(rating: Rating) {
     score: rating.score,
     comment: rating.comment,
     createdAt: rating.createdAt,
+  };
+}
+
+export function serializeNotification(notification: Notification) {
+  let data: Record<string, unknown> | null = null;
+  if (notification.data) {
+    try {
+      data = JSON.parse(notification.data);
+    } catch {
+      data = null;
+    }
+  }
+
+  return {
+    id: notification.id,
+    type: notification.type,
+    title: notification.title,
+    body: notification.body,
+    data,
+    read: notification.read,
+    createdAt: notification.createdAt,
   };
 }
