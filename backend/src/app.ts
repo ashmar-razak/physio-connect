@@ -6,6 +6,7 @@ import clubRoutes from "./routes/clubs";
 import requestRoutes from "./routes/requests";
 import bookingRoutes from "./routes/bookings";
 import ratingRoutes from "./routes/ratings";
+import adminRoutes from "./routes/admin";
 import { errorHandler } from "./middleware/errorHandler";
 import { UPLOADS_DIR } from "./middleware/upload";
 
@@ -24,6 +25,7 @@ export function createApp() {
   app.use("/requests", requestRoutes);
   app.use("/bookings", bookingRoutes);
   app.use("/ratings", ratingRoutes);
+  app.use("/admin", adminRoutes);
 
   app.use(errorHandler);
 

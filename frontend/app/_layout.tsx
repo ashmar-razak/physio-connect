@@ -22,6 +22,7 @@ export default function RootLayout() {
             <Stack.Screen name="requests/[id]" options={{ title: "Cover Request" }} />
             <Stack.Screen name="certifications/manage" options={{ title: "My Certifications" }} />
             <Stack.Screen name="documents/manage" options={{ title: "My Documents" }} />
+            <Stack.Screen name="admin/[id]" options={{ title: "Review Physio" }} />
             <Stack.Screen name="bookings/[id]" options={{ title: "Booking" }} />
           </Stack>
         </AuthProvider>

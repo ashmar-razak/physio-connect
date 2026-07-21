@@ -11,7 +11,13 @@ import { ApiError } from "@/api/client";
 import { API_BASE_URL } from "@/api/config";
 import { DOCUMENT_TYPE_LABEL, DOCUMENT_TYPES } from "@/api/types";
 import type { Document, DocumentType, PhysioProfile } from "@/api/types";
-import { colors, spacing } from "@/theme/colors";
+import { colors, radius, spacing } from "@/theme/colors";
+
+const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
+  PENDING: { fg: colors.warning, bg: colors.warningLight },
+  APPROVED: { fg: colors.success, bg: colors.successLight },
+  REJECTED: { fg: colors.danger, bg: colors.dangerLight },
+};
 
 export default function ManageDocumentsScreen() {
   const [physio, setPhysio] = useState<PhysioProfile | null>(null);
@@ -89,24 +95,35 @@ export default function ManageDocumentsScreen() {
       </Text>
 
       <View style={styles.list}>
-        {physio?.documents?.map((document) => (
-          <Card key={document.id} style={styles.docCard}>
-            <View style={styles.docRow}>
-              <View style={styles.docInfo}>
-                <Text style={styles.docType}>{DOCUMENT_TYPE_LABEL[document.type]}</Text>
-                <Text
-                  style={styles.docLink}
-                  onPress={() => Linking.openURL(`${API_BASE_URL}${document.fileUrl}`)}
-                  numberOfLines={1}
-                >
-                  {document.fileName}
-                </Text>
-                <Text style={styles.meta}>Uploaded {new Date(document.uploadedAt).toLocaleDateString()}</Text>
+        {physio?.documents?.map((document) => {
+          const statusStyle = STATUS_COLORS[document.status];
+          return (
+            <Card key={document.id} style={styles.docCard}>
+              <View style={styles.docRow}>
+                <View style={styles.docInfo}>
+                  <View style={styles.docTypeRow}>
+                    <Text style={styles.docType}>{DOCUMENT_TYPE_LABEL[document.type]}</Text>
+                    <View style={[styles.statusPill, { backgroundColor: statusStyle.bg }]}>
+                      <Text style={[styles.statusText, { color: statusStyle.fg }]}>{document.status}</Text>
+                    </View>
+                  </View>
+                  <Text
+                    style={styles.docLink}
+                    onPress={() => Linking.openURL(`${API_BASE_URL}${document.fileUrl}`)}
+                    numberOfLines={1}
+                  >
+                    {document.fileName}
+                  </Text>
+                  <Text style={styles.meta}>Uploaded {new Date(document.uploadedAt).toLocaleDateString()}</Text>
+                  {document.status === "REJECTED" && document.reviewNote ? (
+                    <Text style={styles.reviewNote}>"{document.reviewNote}"</Text>
+                  ) : null}
+                </View>
+                <Button title="Remove" variant="ghost" onPress={() => remove(document)} loading={deletingId === document.id} />
               </View>
-              <Button title="Remove" variant="ghost" onPress={() => remove(document)} loading={deletingId === document.id} />
-            </View>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
         {!loading && (!physio?.documents || physio.documents.length === 0) ? (
           <Text style={styles.empty}>No documents uploaded yet.</Text>
         ) : null}
@@ -135,9 +152,13 @@ const styles = StyleSheet.create({
   docCard: { marginBottom: spacing.sm },
   docRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   docInfo: { flexShrink: 1, marginRight: spacing.sm },
+  docTypeRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
   docType: { fontWeight: "700", color: colors.text },
+  statusPill: { borderRadius: radius.pill, paddingVertical: 2, paddingHorizontal: spacing.xs },
+  statusText: { fontSize: 10, fontWeight: "700" },
   docLink: { color: colors.primary, marginTop: spacing.xs, textDecorationLine: "underline" },
   meta: { color: colors.textMuted, fontSize: 13, marginTop: spacing.xs },
+  reviewNote: { color: colors.danger, fontStyle: "italic", marginTop: spacing.xs, fontSize: 13 },
   empty: { color: colors.textMuted, marginTop: spacing.sm },
   formCard: { marginTop: spacing.lg },
   formTitle: { fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: spacing.md },

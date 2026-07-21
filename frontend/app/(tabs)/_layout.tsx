@@ -11,6 +11,7 @@ export default function TabsLayout() {
   const { user, isLoading } = useAuth();
   const isClub = user?.role === "CLUB";
   const isPhysio = user?.role === "PHYSIO";
+  const isAdmin = user?.role === "ADMIN";
 
   // Guards direct/deep-link navigation into a tab route: without this, a tab
   // screen can mount (and fire its data fetch) before AuthContext finishes
@@ -71,7 +72,16 @@ export default function TabsLayout() {
         name="bookings"
         options={{
           title: "Bookings",
+          href: isAdmin ? null : undefined,
           tabBarIcon: ({ color }) => <TabIcon symbol="📅" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="admin"
+        options={{
+          title: "Verification",
+          href: isAdmin ? undefined : null,
+          tabBarIcon: ({ color }) => <TabIcon symbol="🛡️" color={color} />,
         }}
       />
       <Tabs.Screen

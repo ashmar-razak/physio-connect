@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../db";
 import { signToken } from "../utils/jwt";
 import { registrationBodySchema } from "../utils/enums";
+import type { AccountRole } from "../utils/enums";
 import { geocodeLocation } from "../utils/geocode";
 import { asyncHandler, HttpError } from "../middleware/errorHandler";
 import { requireAuth } from "../middleware/auth";
@@ -96,7 +97,7 @@ router.post(
       include: { physioProfile: { include: { certifications: true } }, clubProfile: true },
     });
 
-    const token = signToken({ userId: user.id, role: user.role as "PHYSIO" | "CLUB" });
+    const token = signToken({ userId: user.id, role: user.role as AccountRole });
     res.status(201).json({ token, user: serializeUser(user) });
   })
 );
@@ -120,7 +121,7 @@ router.post(
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) throw new HttpError(401, "Invalid email or password");
 
-    const token = signToken({ userId: user.id, role: user.role as "PHYSIO" | "CLUB" });
+    const token = signToken({ userId: user.id, role: user.role as AccountRole });
     res.json({ token, user: serializeUser(user) });
   })
 );

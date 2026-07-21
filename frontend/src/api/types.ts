@@ -1,4 +1,4 @@
-export type Role = "PHYSIO" | "CLUB";
+export type Role = "PHYSIO" | "CLUB" | "ADMIN";
 
 export const REGISTRATION_BODIES = ["HCPC", "CSP"] as const;
 export type RegistrationBody = (typeof REGISTRATION_BODIES)[number];
@@ -67,6 +67,9 @@ export const DOCUMENT_TYPE_LABEL: Record<DocumentType, string> = {
   OTHER: "Other",
 };
 
+export const DOCUMENT_STATUSES = ["PENDING", "APPROVED", "REJECTED"] as const;
+export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
+
 export interface Certification {
   id: string;
   physioProfileId: string;
@@ -85,6 +88,9 @@ export interface Document {
   fileName: string;
   fileUrl: string;
   mimeType: string;
+  status: DocumentStatus;
+  reviewNote?: string | null;
+  reviewedAt?: string | null;
   uploadedAt: string;
 }
 
@@ -118,6 +124,14 @@ export interface PhysioProfile {
   ratingCount: number;
   distanceMiles?: number;
   createdAt: string;
+}
+
+// What GET /admin/verification-queue and GET /admin/physios/:id return — a
+// full PhysioProfile (documents always included, since the viewer is staff)
+// plus their account email and a queue-relevant count.
+export interface AdminPhysio extends PhysioProfile {
+  email: string;
+  pendingDocumentCount?: number;
 }
 
 export interface ClubProfile {

@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { verifyToken } from "../utils/jwt";
+import type { AccountRole } from "../utils/enums";
 
 export const requireAuth: RequestHandler = (req, res, next) => {
   const header = req.headers.authorization;
@@ -16,7 +17,7 @@ export const requireAuth: RequestHandler = (req, res, next) => {
   }
 };
 
-export function requireRole(role: "PHYSIO" | "CLUB"): RequestHandler {
+export function requireRole(role: AccountRole): RequestHandler {
   return (req, res, next) => {
     if (req.user?.role !== role) {
       res.status(403).json({ error: `Only ${role.toLowerCase()} accounts can do this` });

@@ -58,6 +58,14 @@ async function main() {
               { type: "FIRST_AID_AT_WORK", issuingBody: "Red Cross", issueDate: new Date("2023-06-15") },
             ],
           },
+          // Uploaded but not yet reviewed — she'll show as insurance
+          // "Unconfirmed" until an admin approves this, even though she
+          // answered YES to covering pitchside work.
+          documents: {
+            create: [
+              { type: "INSURANCE", fileName: "balens-certificate.pdf", fileUrl: "/uploads/seed-placeholder.pdf", mimeType: "application/pdf" },
+            ],
+          },
         },
       },
     },
@@ -124,6 +132,21 @@ async function main() {
           dayRate: 120,
           sports: "netball,basketball",
           certifications: { create: [{ type: "DBS_BASIC", issuingBody: "DBS" }] },
+          // A rejected upload — the admin queue should show her needing
+          // re-submission, with the reason visible.
+          documents: {
+            create: [
+              {
+                type: "REGISTRATION",
+                fileName: "hcpc-proof.jpg",
+                fileUrl: "/uploads/seed-placeholder.jpg",
+                mimeType: "image/jpeg",
+                status: "REJECTED",
+                reviewNote: "Photo is blurry — please re-upload a clear scan of your HCPC certificate.",
+                reviewedAt: new Date(),
+              },
+            ],
+          },
         },
       },
     },
@@ -150,6 +173,14 @@ async function main() {
           sports: "football",
         },
       },
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: "admin@physioconnect.example.com",
+      passwordHash,
+      role: "ADMIN",
     },
   });
 
@@ -275,6 +306,7 @@ async function main() {
   console.log("Seeded database.");
   console.log(`Sample login: sarah.physio@example.com / ${SEED_PASSWORD}`);
   console.log(`Sample login: welfare@loughboroughfc.example.com / ${SEED_PASSWORD}`);
+  console.log(`Sample login: admin@physioconnect.example.com / ${SEED_PASSWORD}`);
   console.log(`Open cover request id: ${openRequest.id}`);
 }
 

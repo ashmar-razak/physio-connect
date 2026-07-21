@@ -18,7 +18,7 @@ model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String
-  role         String // PHYSIO | CLUB
+  role         String // PHYSIO | CLUB | ADMIN — ADMIN is never self-registered, only seeded/provisioned directly
   createdAt    DateTime @default(now())
 
   physioProfile PhysioProfile?
@@ -120,6 +120,11 @@ model Document {
   fileName String
   fileUrl  String
   mimeType String
+
+  // PENDING | APPROVED | REJECTED — set by an admin reviewing the upload.
+  status     String    @default("PENDING")
+  reviewNote String?
+  reviewedAt DateTime?
 
   uploadedAt DateTime @default(now())
 

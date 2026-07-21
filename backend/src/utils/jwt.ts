@@ -1,10 +1,11 @@
 import jwt from "jsonwebtoken";
+import type { AccountRole } from "./enums";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 
 export interface TokenPayload {
   userId: string;
-  role: "PHYSIO" | "CLUB";
+  role: AccountRole;
 }
 
 export function signToken(payload: TokenPayload): string {

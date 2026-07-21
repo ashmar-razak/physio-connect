@@ -47,3 +47,11 @@ export const insuranceCoverageSchema = z.enum(INSURANCE_COVERAGE);
 
 export const DOCUMENT_TYPES = ["REGISTRATION", "INSURANCE", "DBS", "PITCHSIDE_QUALIFICATION", "OTHER"] as const;
 export const documentTypeSchema = z.enum(DOCUMENT_TYPES);
+
+export const DOCUMENT_STATUSES = ["PENDING", "APPROVED", "REJECTED"] as const;
+export const documentStatusSchema = z.enum(DOCUMENT_STATUSES);
+
+// ADMIN is intentionally excluded from ROLES — it's never selectable at
+// registration, only seeded/provisioned directly. AccountRole is the wider
+// type used for JWTs and auth middleware, which do need to recognize it.
+export type AccountRole = (typeof ROLES)[number] | "ADMIN";

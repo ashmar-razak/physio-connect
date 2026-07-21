@@ -1,5 +1,6 @@
 import { api } from "./client";
 import type {
+  AdminPhysio,
   Application,
   Booking,
   Certification,
@@ -8,6 +9,7 @@ import type {
   CoverRequest,
   CoverType,
   Document,
+  DocumentStatus,
   DocumentType,
   InsuranceCoverage,
   PhysioProfile,
@@ -162,4 +164,13 @@ export const bookingApi = {
 
 export const ratingsApi = {
   forUser: (userId: string) => api.get<{ ratings: Rating[]; averageRating: number | null; ratingCount: number }>(`/ratings/users/${userId}`),
+};
+
+export const adminApi = {
+  verificationQueue: () => api.get<{ physios: AdminPhysio[] }>("/admin/verification-queue"),
+  physioDetail: (id: string) => api.get<{ physio: AdminPhysio }>(`/admin/physios/${id}`),
+  setRegistrationVerified: (id: string, verified: boolean) =>
+    api.post<{ physio: AdminPhysio }>(`/admin/physios/${id}/registration-verification`, { verified }),
+  reviewDocument: (documentId: string, status: Exclude<DocumentStatus, "PENDING">, note?: string) =>
+    api.post<{ document: Document }>(`/admin/documents/${documentId}/review`, { status, note }),
 };

@@ -10,6 +10,7 @@ A matchmaking app connecting sports physios with teams and clubs needing cover �
 - **Trust tiers**: a physio's visible trust tier (Unverified → Standard → Bronze → Silver → Gold) is derived automatically from how many certifications they hold, and factors into search ranking — this is separate from the star rating.
 - **Insurance verification**: physios record professional indemnity/public liability insurance and whether it explicitly covers pitchside/event first-aid work (a standard clinic policy often doesn't). The **Verified** insurance badge only appears once *both* an explicit "yes" *and* an uploaded certificate are on file — a self-reported checkbox alone is treated as Unconfirmed and flagged for follow-up, mirroring a real manual vetting process.
 - **Document uploads**: physios upload proof of registration, insurance, and DBS (PDF/JPEG/PNG/HEIC) via `/physios/me/documents`. Files are stored with randomized names and are never exposed on public browse/search endpoints — only the physio themselves (via `/physios/me`) and a club actively reviewing that physio's application to one of their own posted requests (via `/requests/:id/applications`) can see the document list.
+- **Admin verification workflow**: a staff-only `ADMIN` role (never self-registered — seeded/provisioned directly) reviews the verification queue, approves or rejects each uploaded document with a note, and flips a physio's `registrationVerified` flag. The insurance **Verified** badge specifically requires an *approved* insurance document, not merely an uploaded one.
 - **Bidirectional star ratings**: after a booking is marked complete, both the club and the physio can rate each other (1–5 stars + comment). Average ratings show on both physio and club profiles.
 - **Location-aware matching**: profiles are geocoded (via OpenStreetMap Nominatim) from a free-text location, and both physio and club search support filtering/sorting by distance and travel radius.
 - **Cover request lifecycle**: club posts a request → physios browse/apply → club accepts one application (auto-declining the rest) → booking is created → either party marks it complete → both rate each other.
@@ -36,6 +37,7 @@ Sample seeded logins (password `password123` for all):
 - `sarah.physio@example.com` — HCPC physio, Bronze tier
 - `james.physio@example.com` — CSP physio, Silver tier
 - `welfare@loughboroughfc.example.com` — club
+- `admin@physioconnect.example.com` — staff verification account
 
 ### Frontend
 

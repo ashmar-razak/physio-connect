@@ -11,7 +11,8 @@ export function serializePhysio(
   // like /physios/me include it in full); public routes must pass
   // extras.hasInsuranceDocument explicitly rather than fetching documents,
   // so a physio's document list is never exposed to other users.
-  const hasInsuranceDoc = extras?.hasInsuranceDocument ?? (profile.documents?.some((d) => d.type === "INSURANCE") ?? false);
+  const hasInsuranceDoc =
+    extras?.hasInsuranceDocument ?? (profile.documents?.some((d) => d.type === "INSURANCE" && d.status === "APPROVED") ?? false);
   return {
     id: profile.id,
     userId: profile.userId,
@@ -53,6 +54,9 @@ export function serializeDocument(document: Document) {
     fileName: document.fileName,
     fileUrl: document.fileUrl,
     mimeType: document.mimeType,
+    status: document.status,
+    reviewNote: document.reviewNote,
+    reviewedAt: document.reviewedAt,
     uploadedAt: document.uploadedAt,
   };
 }
